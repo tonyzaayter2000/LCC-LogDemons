@@ -7,7 +7,6 @@
 #include "itkMultiplyImageFilter.h"
 #include <vnl/vnl_math.h>
 #include <itkImageRegionIterator.h>
-#include <itkDivideByConstantImageFilter.h>
 #include <itkWarpVectorImageFilter.h>
 #include <itkWarpImageFilter.h>
 #include <itkWarpVectorImageFilter.h>
@@ -250,11 +249,6 @@ int main( int argc, char ** argv )
   /**
     *     Scale the input SVF 
    **/
-  typedef itk::DivideByConstantImageFilter<VectorImageType,float,VectorImageType> DividerType;
-  DividerType::Pointer Divider=DividerType::New();
-  Divider->SetInput(Out1);
-  Divider->SetConstant(divider );
-  Divider->Update();
 
 
   /**
@@ -266,7 +260,19 @@ int main( int argc, char ** argv )
   AdderType::Pointer Adder=AdderType::New();  
   
   VectorImageType::Pointer Vect1=VectorImageType::New();
-  Vect1=Divider->GetOutput();
+  Vect1->CopyInformation(Out1);
+  Vect1->SetRegions(Out1->GetLargestPossibleRegion());
+  Vect1->Allocate();
+
+  IteratorType inputIt(Out1, Out1->GetLargestPossibleRegion());
+  IteratorType scaledIt(Vect1, Vect1->GetLargestPossibleRegion());
+  for (inputIt.GoToBegin(), scaledIt.GoToBegin();
+       !inputIt.IsAtEnd(); ++inputIt, ++scaledIt)
+  {
+    VectorPixelType value = inputIt.Get();
+    value /= divider;
+    scaledIt.Set(value);
+  }
 
   VectorImageType::Pointer warpedIm=VectorImageType::New();
    
